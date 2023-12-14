@@ -9,26 +9,53 @@ const outputFile = 'output.csv';
 
 const userEntries = {};
 
+function detectTimeFormat(timeString) {
+  // 정규 표현식을 사용하여 시간 형식을 판단
+  const format1 = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/; // yyyy-MM-dd HH:mm:ss
+  const format2 = /^\d{4}-\d{2}-\d{2} \d{1}:\d{2}:\d{2}$/; // yyyy-MM-dd H:mm:ss
+  const format3 = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/; // yyyy-MM-dd HH:mm
+  const format4 = /^\d{4}-\d{2}-\d{2} \d{1}:\d{2}$/; // yyyy-MM-dd H:mm
+  
+  if (format1.test(timeString)) {
+    return 'yyyy-MM-dd HH:mm:ss';
+  } else if (format2.test(timeString)) {
+    return 'yyyy-MM-dd H:mm:ss';
+  } else if (format3.test(timeString)) {
+    return 'yyyy-MM-dd HH:mm';
+  } else if (format4.test(timeString)) {
+    return 'yyyy-MM-dd H:mm';
+  } else {
+    return 'Unknown Format';
+  }
+}
+
 const makeOutput = () => {
     fs.createReadStream(inputFile)
     .pipe(csv())
     .on('data', (row) => {
         const deviceInfo = row['장치'];
         const name = row['사용자'];
-        const time = row['날짜']
+        const logTimeString = row['날짜']
 
         // "OUT"을 찾아서 입장(IN) 또는 퇴장(OUT) 판단
         const isOut = deviceInfo.includes('OUT');
-        const inTime = DateTime.fromFormat(time, 'yyyy-MM-dd HH:mm:ss');
+        const formatForTime = detectTimeFormat(logTimeString);
+        if (formatForTime == 'Unknown Format'){
+            console.log(row);
+            console.log(time);
+            console.log("FormatError!");
+            process.exit();
+        }
+        const logTime = DateTime.fromFormat(logTimeString, formatForTime);
         
         if (!userEntries[name]) {
         userEntries[name] = [];
         }
 
         if (isOut) {
-            userEntries[name].push({outTime: inTime});
+            userEntries[name].push({outTime: logTime});
         } else {
-            userEntries[name].push({inTime: inTime});
+            userEntries[name].push({inTime: logTime});
         }
     })
     .on('end', () => {
