@@ -93,7 +93,10 @@ const makeOutput = () => {
             const entries = userEntries[name];
             for (let i = 0; i < entries.length; i += 2) {
                 if (i + 1 < entries.length) {
-                    if (entries[i + 1].inTime != undefined) {
+                    if (entries[i + 1].inTime != undefined || entries[i].inTime == undefined) {
+                        if (entries[i].inTime == undefined && entries[i + 1].inTime == undefined)
+                            while(entries[i].inTime == undefined)
+                                i++;
                         while (i + 1 < entries.length && entries[i + 1].inTime != undefined)
                             i++;
                     }
